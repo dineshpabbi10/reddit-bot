@@ -3,8 +3,11 @@ from PIL import Image,ImageDraw,ImageFont
 from utilModule.utilFunc import *
 from gtts import gTTS
 import cv2
+import moviepy.editor as mp
 
 MAX_STR_SIZE = 70
+AudioSegment.converter = os.path.join(getCwd(),"bin","ffmpeg")
+
 def createTitleImage(post,i,resourceMap):
     # convert title to multiline
     multiLineHeader = converToMultiline(post['postTitle'])
@@ -93,13 +96,21 @@ def generateAudiosForPost(post,resourceMap):
         resourceMap[post["id"]]["commentResourcePaths"][post['postComments'][i]["id"]].append(savePath)
         # resourceMap[post["id"]]['commentAudioPaths'].append(savePath)
 
-def generateVideo(video_name,framerate,resourceMap):
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    video = cv2.VideoWriter(os.path.join(getCwd(), video_name + ".avi"),fourcc, 0, framerate , (1280, 720))
+def generateVideoHelper(video_name,framerate,resourceMap):
+    audioFile = AudioSegment.empty()
+    generateVideoAndAudio(video_name,framerate,resourceMap,audioFile)
+
+def generateVideoAndAudio(video_name,framerate,resourceMap,audioFile):
+    # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    cv2.VideoWriter()
+    video = cv2.VideoWriter(os.path.join(getCwd(), video_name + ".avi"), 0, framerate , (1280, 720))
     for ids in resourceMap.keys():
         titleImagePath = resourceMap[ids]['titleImagePath']
         titleAudioPath = resourceMap[ids]['titleAudioPath']
         titleAudioLength = getAudioLength(titleAudioPath)*framerate
+        audioFile = combineAudio(audioFile,titleAudioPath)
+        second_of_silence = AudioSegment.silent(duration=1000)
+        audioFile = audioFile+second_of_silence
         frame = cv2.imread(titleImagePath)
         for i in range(int(titleAudioLength)):
             video.write(frame)
@@ -108,12 +119,20 @@ def generateVideo(video_name,framerate,resourceMap):
             commentImagePath = resourceMap[ids]['commentResourcePaths'][i][0]
             commentAudioPath = resourceMap[ids]['commentResourcePaths'][i][1]
             commentAudioLength = getAudioLength(commentAudioPath)*framerate
-            print(commentAudioLength,commentImagePath,commentAudioPath)
             frame = cv2.imread(commentImagePath)
+            audioFile = combineAudio(audioFile,commentAudioPath)
+            audioFile = audioFile+second_of_silence
             for j in range(int(commentAudioLength)):
                 video.write(frame)
     video.release()
+    audioFile.export(os.path.join(getCwd(), video_name + ".mp3"), format="mp3")
     cv2.destroyAllWindows()
+
+
+def combineAudioAndVideo(file_name):
+    video = mp.VideoFileClip(os.path.join(getCwd(), file_name + ".avi"))
+    video.write_videofile(os.path.join(getCwd(), file_name + "_final.mp4"), audio=os.path.join(getCwd(), file_name + ".mp3"))
+
 
 
 

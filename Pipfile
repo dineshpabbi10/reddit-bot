@@ -10,6 +10,9 @@ pillow = "*"
 praw = "*"
 tqdm = "*"
 mutagen = "*"
+pydub = "*"
+moviepy = "*"
+ffmpeg = "*"
 
 [dev-packages]
 

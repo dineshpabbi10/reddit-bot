@@ -1,5 +1,6 @@
 import os
 from mutagen.mp3 import MP3
+from pydub import AudioSegment
 
 def getCwd():
     return os.getcwd()
@@ -18,3 +19,7 @@ def cleanDirectory():
     path = os.path.join(getCwd(),"export")
     for f in os.listdir(path):
         os.remove(os.path.join(path, f))
+
+def combineAudio(audioFile,path):
+    audioFile = audioFile + AudioSegment.from_mp3(path)
+    return audioFile

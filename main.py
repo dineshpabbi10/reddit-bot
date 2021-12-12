@@ -1,5 +1,5 @@
 from redditModule.redditModule import getConfigObject,getRedditObject,getTopPosts,getPostFormattedObject
-from videoModule.videoModule import createTitleImage,generateAudiosForPost,generateVideo
+from videoModule.videoModule import createTitleImage,generateAudiosForPost,generateVideoAndAudio,combineAudioAndVideo,generateVideoHelper
 from utilModule.utilFunc import createFolder,getCwd,cleanDirectory
 from tqdm import tqdm
 
@@ -32,6 +32,7 @@ for submission in formattedPostObjects:
         "commentAudioPaths":[],
         "commentResourcePaths":{}
     }
+
 print("4. Creating Images for Submissions")
 for i in tqdm(range(len(formattedPostObjects))):
     createTitleImage(formattedPostObjects[i],i,resourceMap)
@@ -41,8 +42,8 @@ for i in tqdm(range(len(formattedPostObjects))):
     generateAudiosForPost(formattedPostObjects[i],resourceMap)
 
 print("6. TODO : Combining Generated resources into one video")
-generateVideo("output1",10,resourceMap)
+generateVideoHelper("output1",10,resourceMap)
+combineAudioAndVideo("output1")
 
 print("7. TODO : Cleaning up redundant generated resources")
 cleanDirectory()
-# print(resourceMap)
