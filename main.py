@@ -1,5 +1,5 @@
 from redditModule.redditModule import getConfigObject,getRedditObject,getTopPosts,getPostFormattedObject
-from videoModule.videoModule import createSingleImage
+from videoModule.videoModule import createTitleImage,generateAudiosForPost
 from utilModule.utilFunc import createFolder,getCwd
 from tqdm import tqdm
 
@@ -25,9 +25,11 @@ for i in tqdm(range(len(posts))):
 
 print("4. Creating Images for Submissions")
 for i in tqdm(range(len(formattedPostObjects))):
-    createSingleImage(formattedPostObjects[i],i)
+    createTitleImage(formattedPostObjects[i],i)
 
 print("5. TODO : Creating audio files for submissions")
+for i in tqdm(range(len(formattedPostObjects))):
+    generateAudiosForPost(formattedPostObjects[i])
 
 print("6. TODO : Combining Generated resources into one video")
 

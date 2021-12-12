@@ -39,7 +39,7 @@ def getPostComments(post):
 
         formattedComment = comment.body
         # Only look for comments which have length of text at most 1100 characters
-        if(len(formattedComment)>1100):
+        if(len(formattedComment)>800):
             pass
         else:
 
@@ -54,7 +54,7 @@ def getPostComments(post):
                 upvotes = '<unavailable>'
 
             formattedComments.append({
-                'commentAuther':authorName,
+                'commentAuthor':authorName,
                 'comment':formattedComment,
                 'commentUpvotes':upvotes
             })
@@ -74,8 +74,12 @@ def getPostUpvotes(post):
 def getPostCommentNumber(post):
     return post.num_comments
 
+def getPostId(post):
+    return post.id
+
 def getPostFormattedObject(post):
     return {
+        "id":getPostId(post),
         "postTitle":getPostTitle(post),
         "postAuthor":getPostAuthor(post),
         "postUpvotes":getPostUpvotes(post),
