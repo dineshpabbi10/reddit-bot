@@ -71,6 +71,7 @@ def createCommentImage(post,comment,i,resourceMap):
     resourceMap[post["id"]]["commentResourcePaths"][comment["id"]] = [savePath]
 
 def converToMultiline(oldString):
+    oldString = oldString.replace("\n"," ")
     words = oldString.split(" ")
     newString = ""
     newlineCounter = 1
