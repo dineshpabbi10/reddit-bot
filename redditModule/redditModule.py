@@ -54,6 +54,7 @@ def getPostComments(post):
                 upvotes = '<unavailable>'
 
             formattedComments.append({
+                'id':comment.id,
                 'commentAuthor':authorName,
                 'comment':formattedComment,
                 'commentUpvotes':upvotes

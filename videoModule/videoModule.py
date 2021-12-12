@@ -2,9 +2,10 @@ from typing import Counter
 from PIL import Image,ImageDraw,ImageFont
 from utilModule.utilFunc import *
 from gtts import gTTS
+import cv2
 
 MAX_STR_SIZE = 70
-def createTitleImage(post,i):
+def createTitleImage(post,i,resourceMap):
     # convert title to multiline
     multiLineHeader = converToMultiline(post['postTitle'])
 
@@ -28,14 +29,16 @@ def createTitleImage(post,i):
     imgDraw.text((10, 10),"Post #"+str(i),(82,82,82),font=fontTitle) # 10,10
     imgDraw.text((185, 130),"u/"+str(post['postAuthor']),(0,76,153),font=fontAuthor) # 185,170
     imgDraw.text((130, 60),str(post['postUpvotes']),(82,82,82),font=font) # 130,170
-    im.save(os.path.join(getCwd(),"export",str(post["id"])+"_title.png"))
+    savePath = os.path.join(getCwd(),"export",str(post["id"])+"_title.png")
+    im.save(savePath)
+    resourceMap[post["id"]]['titleImagePath'] = savePath
     # generate images for comment
     for i in range(len(post['postComments'])):
-        createCommentImage(post,post['postComments'][i],i)
+        createCommentImage(post,post['postComments'][i],i,resourceMap)
 
 
 
-def createCommentImage(post,comment,i):
+def createCommentImage(post,comment,i,resourceMap):
     # convert title to multiline
     multiLineHeader = converToMultiline(comment['comment'])
 
@@ -59,7 +62,10 @@ def createCommentImage(post,comment,i):
     imgDraw.text((130, 130),"author: ",(82,82,82),font=fontAuthor)
     imgDraw.text((185, 130),"u/"+str(comment['commentAuthor']),(0,76,153),font=fontAuthor)
     imgDraw.text((130, 60),str(comment['commentUpvotes']),(82,82,82),font=font)
-    im.save(os.path.join(getCwd(),"export",str(post["id"])+"_comment_"+str(i)+".png"))
+    savePath = os.path.join(getCwd(),"export",str(post["id"])+"_comment_"+str(i)+".png")
+    im.save(savePath)
+    # resourceMap[post["id"]]["commentImagePaths"].append(savePath)
+    resourceMap[post["id"]]["commentResourcePaths"][comment["id"]] = [savePath]
 
 def converToMultiline(oldString):
     words = oldString.split(" ")
@@ -75,9 +81,39 @@ def converToMultiline(oldString):
         oldString = oldString[:i*MAX_STR_SIZE]+"\n"+oldString[i*MAX_STR_SIZE:]
     return newString
 
-def generateAudiosForPost(post):
+def generateAudiosForPost(post,resourceMap):
     tts = gTTS(post['postTitle'])
-    tts.save(os.path.join(getCwd(),"export",str(post["id"])+"_title.mp3"))
+    savePath = os.path.join(getCwd(),"export",str(post["id"])+"_title.mp3")
+    tts.save(savePath)
+    resourceMap[post["id"]]['titleAudioPath'] = savePath
     for i in range(len(post['postComments'])):
+        savePath = os.path.join(getCwd(),"export",str(post["id"])+"_comment_"+str(i)+".mp3")
         tts = gTTS(post['postComments'][i]['comment'])
-        tts.save(os.path.join(getCwd(),"export",str(post["id"])+"_comment_"+str(i)+".mp3"))
+        tts.save(savePath)
+        resourceMap[post["id"]]["commentResourcePaths"][post['postComments'][i]["id"]].append(savePath)
+        # resourceMap[post["id"]]['commentAudioPaths'].append(savePath)
+
+def generateVideo(video_name,framerate,resourceMap):
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    video = cv2.VideoWriter(os.path.join(getCwd(), video_name + ".avi"),fourcc, 0, framerate , (1280, 720))
+    for ids in resourceMap.keys():
+        titleImagePath = resourceMap[ids]['titleImagePath']
+        titleAudioPath = resourceMap[ids]['titleAudioPath']
+        titleAudioLength = getAudioLength(titleAudioPath)*framerate
+        frame = cv2.imread(titleImagePath)
+        for i in range(int(titleAudioLength)):
+            video.write(frame)
+        
+        for i in resourceMap[ids]['commentResourcePaths'].keys():
+            commentImagePath = resourceMap[ids]['commentResourcePaths'][i][0]
+            commentAudioPath = resourceMap[ids]['commentResourcePaths'][i][1]
+            commentAudioLength = getAudioLength(commentAudioPath)*framerate
+            print(commentAudioLength,commentImagePath,commentAudioPath)
+            frame = cv2.imread(commentImagePath)
+            for j in range(int(commentAudioLength)):
+                video.write(frame)
+    video.release()
+    cv2.destroyAllWindows()
+
+
+
