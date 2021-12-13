@@ -4,7 +4,14 @@
         "client_secret":"uUxuF2GXJP2Io1EhewRGg5APmI2CcQ",
         "password":"",
         "username":"Disastrous_Pie9783",
-        "subReddit":"askreddit"
+        "subReddit":"dadjokes",
+        "score":3000,
+        "duration":"week",
+        "numberOfComments":2,
+        "postLength":800,
+        "getPostContent":true,
+        "getPostImage":false,
+        "titleSilenceDuration":1000
     },
     "videoConfig":{
 

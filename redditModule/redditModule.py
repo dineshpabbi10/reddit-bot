@@ -19,22 +19,27 @@ def getRedditObject():
     )
     return reddit
 
-def getTopPosts(subredditName,redditObject):
+def getTopPosts(subredditName,redditObject,duration):
     # the subreddits you want your bot to live on
     subreddit = redditObject.subreddit(subredditName)
-    topPosts = subreddit.top('day')
+    topPosts = subreddit.top(duration)
     return topPosts
 
-def getPostTitle(post):
-    return post.title
+def getPostTitle(post,getPostContent):
+    if(getPostContent):
+        content = post.title+" : "+post.selftext
+    else:
+        content  = post.title
 
-def getPostComments(post):
+    return content
+
+def getPostComments(post,numOfComments):
     post.comment_sort = 'top'
     allComments = post.comments
     formattedComments = []
     for comment in allComments:
         # Only add at most 10 comments
-        if(len(formattedComments)>10):
+        if(len(formattedComments)>=numOfComments):
             break
 
         formattedComment = comment.body
@@ -78,13 +83,22 @@ def getPostCommentNumber(post):
 def getPostId(post):
     return post.id
 
-def getPostFormattedObject(post):
+def getPostUrl(post):
+    return post.url
+
+def getPostContent(post):
+    return post.selftext
+
+
+def getPostFormattedObject(post,numOfComments,getPostContentVar):
     return {
         "id":getPostId(post),
-        "postTitle":getPostTitle(post),
+        "url":getPostUrl(post),
+        "postTitle":getPostTitle(post,getPostContentVar),
+        "postContent":getPostContent(post),
         "postAuthor":getPostAuthor(post),
         "postUpvotes":getPostUpvotes(post),
         "postCommentNumber":getPostCommentNumber(post),
-        "postComments":getPostComments(post)
+        "postComments":getPostComments(post,numOfComments)
     }
         

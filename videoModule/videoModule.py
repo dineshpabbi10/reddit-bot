@@ -4,13 +4,13 @@ from utilModule.utilFunc import *
 from gtts import gTTS
 import cv2
 import moviepy.editor as mp
+import requests
+from io import BytesIO
 
 MAX_STR_SIZE = 70
 AudioSegment.converter = os.path.join(getCwd(),"bin","ffmpeg")
 
-def createTitleImage(post,i,resourceMap):
-    # convert title to multiline
-    multiLineHeader = converToMultiline(post['postTitle'])
+def createTitleImage(post,i,resourceMap,getPostImage,getPostContent):    
 
     # Load icons
     redditImageIcon = Image.open("staticFiles/redditIcon.png")
@@ -23,7 +23,26 @@ def createTitleImage(post,i,resourceMap):
     im = Image.new(mode='RGB',size=(1280,720),color=(255,255,255))
     im.paste(redditImageIcon,(10,130)) # 10,240
     im.paste(upvoteImageIcon,(30,60)) # 30,170
-    font = ImageFont.truetype("staticFiles/arial.ttf", 34)
+    if(getPostImage):
+        # Get the link of the submission
+        url = str(post["url"])
+        # Check if the link is an image
+        if url.endswith("jpg") or url.endswith("jpeg") or url.endswith("png") or url.endswith("gif"):
+            response = requests.get(url)
+            contentImage = Image.open(BytesIO(response.content))
+            widthContent,heightContent = contentImage.size
+            ratio = 700-250
+            ratio = ratio/heightContent
+            if(ratio != 0):
+                contentImage = contentImage.resize((int(widthContent*ratio),int(heightContent*ratio)))
+            im.paste(contentImage,(120,250))
+        else:
+            if(getPostContent == False):
+                post['postTitle'] = post['postTitle']+" : "+post["postContent"]
+
+        # convert title to multiline
+    multiLineHeader = converToMultiline(post['postTitle'])
+    font = ImageFont.truetype("staticFiles/arial.ttf", 32)
     fontTitle = ImageFont.truetype("staticFiles/arial.ttf", 45)
     fontAuthor = ImageFont.truetype("staticFiles/arial.ttf", 16)
     imgDraw = ImageDraw.Draw(im)
@@ -92,25 +111,29 @@ def generateAudiosForPost(post,resourceMap):
     resourceMap[post["id"]]['titleAudioPath'] = savePath
     for i in range(len(post['postComments'])):
         savePath = os.path.join(getCwd(),"export",str(post["id"])+"_comment_"+str(i)+".mp3")
-        tts = gTTS(post['postComments'][i]['comment'])
-        tts.save(savePath)
+        try:
+            tts = gTTS(post['postComments'][i]['comment'])
+            tts.save(savePath)
+        except Exception as e:
+            tts = gTTS("No Comment Found")
+            tts.save(savePath)
         resourceMap[post["id"]]["commentResourcePaths"][post['postComments'][i]["id"]].append(savePath)
         # resourceMap[post["id"]]['commentAudioPaths'].append(savePath)
 
-def generateVideoHelper(video_name,framerate,resourceMap):
+def generateVideoHelper(video_name,framerate,resourceMap,silenceDurationTitle):
     audioFile = AudioSegment.empty()
-    generateVideoAndAudio(video_name,framerate,resourceMap,audioFile)
+    generateVideoAndAudio(video_name,framerate,resourceMap,audioFile,silenceDurationTitle)
 
-def generateVideoAndAudio(video_name,framerate,resourceMap,audioFile):
+def generateVideoAndAudio(video_name,framerate,resourceMap,audioFile,silenceDurationTitle):
     # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     cv2.VideoWriter()
     video = cv2.VideoWriter(os.path.join(getCwd(), video_name + ".avi"), 0, framerate , (1280, 720))
     for ids in resourceMap.keys():
         titleImagePath = resourceMap[ids]['titleImagePath']
         titleAudioPath = resourceMap[ids]['titleAudioPath']
-        titleAudioLength = getAudioLength(titleAudioPath)*framerate
+        titleAudioLength = getAudioLength(titleAudioPath,silenceDurationTitle//1000)*framerate
         audioFile = combineAudio(audioFile,titleAudioPath)
-        second_of_silence = AudioSegment.silent(duration=1000)
+        second_of_silence = AudioSegment.silent(duration=silenceDurationTitle)
         audioFile = audioFile+second_of_silence
         frame = cv2.imread(titleImagePath)
         for i in range(int(titleAudioLength)):
@@ -119,10 +142,10 @@ def generateVideoAndAudio(video_name,framerate,resourceMap,audioFile):
         for i in resourceMap[ids]['commentResourcePaths'].keys():
             commentImagePath = resourceMap[ids]['commentResourcePaths'][i][0]
             commentAudioPath = resourceMap[ids]['commentResourcePaths'][i][1]
-            commentAudioLength = getAudioLength(commentAudioPath)*framerate
+            commentAudioLength = getAudioLength(commentAudioPath,1)*framerate
             frame = cv2.imread(commentImagePath)
             audioFile = combineAudio(audioFile,commentAudioPath)
-            audioFile = audioFile+second_of_silence
+            audioFile = audioFile+AudioSegment.silent(duration=1000)
             for j in range(int(commentAudioLength)):
                 video.write(frame)
     video.release()
